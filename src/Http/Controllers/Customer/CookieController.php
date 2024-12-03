@@ -3,13 +3,11 @@
 namespace Webkul\GDPR\Http\Controllers\Customer;
 
 use Webkul\GDPR\Http\Controllers\Controller;
-use Cookie;
-
+use Illuminate\Support\Facades\Cookie;
 
 class CookieController extends Controller
 {
-
-     /**
+    /**
      * Display a listing of the resource.
      *
      * @var \Illuminate\Http\Response
@@ -18,12 +16,12 @@ class CookieController extends Controller
 
 
     public function __construct()
-    { 
+    {
         $this->_config = request('_config');
     }
 
 
-     /**
+    /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\View\View
@@ -32,5 +30,4 @@ class CookieController extends Controller
     {
         return view($this->_config['view']);
     }
-    
 }

@@ -60,13 +60,13 @@
             </div>
 
             {!! view_render_event('bagisto.shop.customers.signup_form_controls.password_confirmation.after') !!}
-            
+
             @php
-                $gdpr = app('Webkul\GDPR\Repositories\GDPRRepository')->first();   
+                $gdpr = app('Webkul\GDPR\Repositories\GDPRRepository')->first();
             @endphp
-                        
+
             @if($gdpr->gdpr_status == 1 && $gdpr->customer_agreement_status == 1)
-                        
+
                 <div class="control-group" :class="[errors.has('agreement') ? 'has-error' : '']">
                     <input type="checkbox" id="checkbox2" name="agreement" v-validate="'required'" data-vv-as="&quot;{{ __('shop::app.customer.signup-form.agreement') }}&quot;">
                     <label class="required">
@@ -80,7 +80,7 @@
 
             @endif
 
-            {{-- <div class="signup-confirm" :class="[errors.has('agreement') ? 'has-error' : '']">
+            <div class="signup-confirm" :class="[errors.has('agreement') ? 'has-error' : '']">
                 <span class="checkbox">
                     <input type="checkbox" id="checkbox2" name="agreement" v-validate="'required'">
                     <label class="checkbox-view" for="checkbox2"></label>
@@ -89,7 +89,7 @@
                     </span>
                 </span>
                 <span class="control-error" v-if="errors.has('agreement')">@{{ errors.first('agreement') }}</span>
-            </div> --}}
+            </div>
 
             {{-- <span class="checkbox">
                 <input type="checkbox" id="checkbox1" name="checkbox[]">
@@ -201,7 +201,7 @@
     function myFunction() {
 
         var x = document.getElementById("modal_view");
-        
+
         if (x.style.display === "none") {
             x.style.display = "block";
         }

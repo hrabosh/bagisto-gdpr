@@ -3,7 +3,7 @@
 namespace Webkul\GDPR\Console\Commands;
 
 use Illuminate\Console\Command;
-use Artisan;
+use Illuminate\Support\Facades\Artisan;
 
 class Install extends Command
 {

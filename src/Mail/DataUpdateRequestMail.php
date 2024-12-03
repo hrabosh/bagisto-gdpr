@@ -4,6 +4,9 @@ namespace Webkul\GDPR\Mail;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
@@ -13,20 +16,30 @@ class DataUpdateRequestMail extends Mailable
 
     public $dataUpdateRequest;
 
-    public function __construct($dataUpdateRequest) {
+    public function __construct($dataUpdateRequest)
+    {
         $this->dataUpdateRequest = $dataUpdateRequest;
-
     }
 
-    /**
-     * Build the message.
-     *
-     * @return $this
-     */
-    public function build()
+    public function envelope(): Envelope
     {
-        return $this->to($this->dataUpdateRequest['email'])
-            ->subject(trans('gdpr::app.mail.new-data-request.new-request-for-data-update'))
-            ->view('gdpr::emails.customers.new-data-update-request')->with($this->dataUpdateRequest);
+        return new Envelope(
+            to: [
+                new Address(
+                    $this->dataUpdateRequest['email'],
+                ),
+            ],
+            subject: trans('gdpr::app.mail.new-data-request.new-request-for-data-update'),
+        );
+    }
+
+    public function content(): Content
+    {
+        return new Content(
+            view: 'gdpr::emails.customers.new-data-request',
+            with: [
+                'dataRequest' => $this->dataUpdateRequest,
+            ],
+        );
     }
 }

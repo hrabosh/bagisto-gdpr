@@ -11,10 +11,12 @@ class GdprTableSeeder extends Seeder
     public function run()
     {
         DB::table('gdpr')->insert([
+            'channel_id' => 1,
+            'locale_id' => 1,
             'gdpr_status' => 1,
             'customer_agreement_status' => 0,
-            'agreement_label'  => 'I agree with the terms and conditions.',
-            'agreement_content' => '<p>Demo Data</p>',
+            'agreement_label'  => 'I agree with the',
+            'agreement_label_link_text'  => 'terms and conditions',
             'cookie_status' => 0,
             'cookie_block_position' => 'bottom-left',
             'cookie_static_block_identifier' => 'Cookie Block',

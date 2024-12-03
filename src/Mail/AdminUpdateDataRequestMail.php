@@ -4,6 +4,9 @@ namespace Webkul\GDPR\Mail;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
@@ -15,18 +18,27 @@ class AdminUpdateDataRequestMail extends Mailable
 
     public function __construct($adminUpdateRequest) {
         $this->adminUpdateRequest = $adminUpdateRequest;
-
     }
 
-    /**
-     * Build the message.
-     *
-     * @return $this
-     */
-    public function build()
+    public function envelope(): Envelope
     {
-        return $this->to($this->adminUpdateRequest['email'])
-            ->subject('Request Status')
-            ->view('gdpr::emails.customers.admin-update-data-request')->with($this->adminUpdateRequest);
+        return new Envelope(
+            to: [
+                new Address(
+                    $this->adminUpdateRequest['email'],
+                ),
+            ],
+            subject: "Request Status",
+        );
+    }
+
+    public function content(): Content
+    {
+        return new Content(
+            view: 'gdpr::emails.customers.admin-update-data-request',
+            with: [
+                'adminUpdateRequest' => $this->adminUpdateRequest,
+            ],
+        );
     }
 }

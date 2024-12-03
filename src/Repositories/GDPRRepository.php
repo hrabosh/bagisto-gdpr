@@ -4,6 +4,7 @@ namespace Webkul\GDPR\Repositories;
 
 use Illuminate\Container\Container;
 use Webkul\Core\Eloquent\Repository;
+use Webkul\GDPR\Contracts\GDPR;
 
 class GDPRRepository extends Repository
 {
@@ -14,7 +15,7 @@ class GDPRRepository extends Repository
      */
     function model()
     {
-        return 'Webkul\GDPR\Contracts\GDPR';
+        return GDPR::class;
     }
 
     public function __construct(

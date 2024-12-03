@@ -2,48 +2,37 @@
 
 namespace Webkul\GDPR\Http\Controllers\Admin;
 
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\View\View;
+use Webkul\GDPR\DataGrids\Admin\GDPRDataRequest;
 use Webkul\GDPR\Http\Controllers\Controller;
-use Webkul\GDPR\Repositories\GDPRRepository;
 use Webkul\GDPR\Mail\AdminUpdateDataRequestMail;
 use Webkul\GDPR\Repositories\GDPRDataRequestRepository;
-use Illuminate\Support\Facades\DB;
-use Artisan;
+use Webkul\GDPR\Repositories\GDPRRepository;
 
 class AdminController extends Controller
 {
-     /**
+    /**
      * Display a listing of the resource.
      *
-     * @var \Illuminate\Http\Response
+     * @var Response
      */
     protected $_config;
 
+    protected GDPRRepository $gdprRepository;
 
-     /**
-     * GDPRRepository object
-     *
-     * @var object
-     */
-    protected $gdprRepository;
+    protected GDPRDataRequestRepository $gdprDataRequestRepository;
 
-
-     /**
-     * GDPRDataRequestRepository object
-     *
-     * @var object
-     */
-    protected $gdprDataRequestRepository;
-
-
-     /**
+    /**
      * Create a new controller instance.
      *
-     * @param  \Webkul\GDPR\Repositories\GDPRRepository  $gdprRepository
-     * @param  \Webkul\GDPR\Repositories\GDPRDataRequestRepository  $gdprDataRequestRepository
+     * @param GDPRRepository $gdprRepository
+     * @param GDPRDataRequestRepository $gdprDataRequestRepository
      * @return void
      */
-    public function __construct(GDPRRepository $gdprRepository,GDPRDataRequestRepository $gdprDataRequestRepository) 
+    public function __construct(GDPRRepository $gdprRepository, GDPRDataRequestRepository $gdprDataRequestRepository)
     {
         $this->middleware('admin');
         $this->gdprRepository = $gdprRepository;
@@ -51,143 +40,84 @@ class AdminController extends Controller
         $this->_config = request('_config');
     }
 
-
-     /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\View\View
-     */
-    public function index()
-    {
-        $data = $this->gdprRepository->first();
-        
-        return view($this->_config['view'], [
-            'gdprData' => $data,
-        ]);
-    }
-
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function store($id)
-    {
-        if(request()->get('enabled_gdpr') == 'on') {
-            $gdprStatus = 1;
-        } else {
-            $gdprStatus = 0;
-        }
-
-        if(request()->get('customer_agreement') == 'on') {
-            $customerAgreementStatus = 1;
-        } else {
-            $customerAgreementStatus = 0;
-        }
-
-        if(request()->get('enabled_cookie_notice') == 'on') {
-            $cookieStatus = 1;
-        } else {
-            $cookieStatus = 0;
-        }
-
-        $params = request()->except('_token') + [
-            'gdpr_status'=>$gdprStatus,
-            'customer_agreement_status'=>$customerAgreementStatus,
-            'cookie_status'=>$cookieStatus
-        ];
-
-        $this->gdprRepository->findOneWhere([
-            'id' => $id,
-        ]);
-
-        $params['agreement_content'] = str_replace('=&gt;', '=>', $params['agreement_content']);
-
-        unset($params['enabled_gdpr']);
-        unset($params['customer_agreement']);
-        unset($params['enabled_cookie_notice']);
-
-        $this->gdprRepository->where('id',$id)->update($params);
-         
-        Artisan::call('optimize');
-
-        session()->flash('success', trans('gdpr::app.admin.create-gdpr.update-success'));
-        return redirect()->route($this->_config['redirect']);
-    }
-
-
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function customerDataRequest()
     {
-        return view($this->_config['view']);   
+        if (request()->ajax()) {
+            return app(GDPRDataRequest::class)->toJson();
+        }
+
+        return view($this->_config['view']);
     }
 
-
     /**
-    * Show the Data Request edit form
-    *
-    * @return \Illuminate\View\View
-    */
+     * Show the Data Request edit form
+     *
+     * @return View
+     */
     public function edit($id)
     {
         $data = $this->gdprDataRequestRepository->find($id);
-    
+
         return view($this->_config['view'], compact('data'));
     }
 
     /**
-    * Method to update the Data Request information.
-    *
-    * @return Mixed
-    */
+     * Method to update the Data Request information.
+     *
+     * @return RedirectResponse
+     */
     public function update()
     {
-       $data = request()->except('_token');
-       $request = $this->gdprDataRequestRepository->where('id',$data['id'])->get();
+        $data = request()->except('_token');
+        $request = $this->gdprDataRequestRepository->where('id', $data['id'])->get();
 
-       foreach($request as $value) {
-           $requestData = $value;
-       }
-       
-       $result = $this->gdprDataRequestRepository->find($data['id'])->update($data);
+        foreach ($request as $value) {
+            $requestData = $value;
+        }
 
-       $params = $data + [
-                'customer_id'=>$requestData->customer_id,
-                'email'=>$requestData->email,
+        $result = $this->gdprDataRequestRepository->find($data['id'])->update($data);
+
+        $params = $data + [
+                'customer_id' => $requestData->customer_id,
+                'email' => $requestData->email,
             ];
 
-        if($result) {
+        if ($result) {
             try {
+                if ($data['sent_email'] ?? false) {
                     Mail::queue(new AdminUpdateDataRequestMail($params));
-                    session()->flash('success', trans('gdpr::app.response.update-success', ['name' => 'Data Request']));      
-            } catch(\Exception $e) {
-                    session()->flash('success', trans('gdpr::app.response.update-success-unsent-email', ['name' => 'Data Request']));      
+                    session()->flash('success', trans('gdpr::app.response.update-success', ['name' => 'Data Request']));
+                } else {
+                    session()->flash('success', trans('gdpr::app.response.update-success-without-email'));
+                }
+            } catch (\Exception $e) {
+                session()->flash('success', trans('gdpr::app.response.update-success-unsent-email', ['name' => 'Data Request']));
             }
         }
 
         return redirect()->route($this->_config['redirect']);
     }
 
-
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @return RedirectResponse
      */
     public function delete($id)
     {
+        $this->gdprDataRequestRepository->findOrFail($id);
+
         try {
             $this->gdprDataRequestRepository->delete($id);
             session()->flash('success', trans('gdpr::app.response.delete-success', ['name' => 'Data Request']));
-
         } catch (\Exception $e) {
-            session()->flash('error', trans( 'gdpr::app.response.attribute-reason-error', ['name' => 'Data Request']));
+            session()->flash('error', trans('gdpr::app.response.attribute-reason-error', ['name' => 'Data Request']));
         }
 
         return redirect()->back();

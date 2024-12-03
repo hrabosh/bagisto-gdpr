@@ -2,38 +2,26 @@
 
 namespace Webkul\GDPR\DataGrids\Admin;
 
-use DB;
-use Webkul\Ui\DataGrid\DataGrid;
+use Illuminate\Support\Facades\DB;
+use Webkul\DataGrid\DataGrid;
 
 class GDPRDataRequest extends DataGrid
 {
     /**
      * @var integer
      */
-    protected $index = 'id';
-    protected $sortOrder = 'desc'; //asc or desc
+    protected $primaryColumn = 'id';
 
-    /**
-     * Create a new repository instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        $this->invoker = $this;
-    }
+    protected $sortOrder = 'desc'; //asc or desc
 
     public function prepareQueryBuilder()
     {
         $customerId = NULL;
-
         if (auth()->guard('customer')->user()) {
-          
             $customerId = auth()->guard('customer')->user()->id;
         }
 
-       
-        $queryBuilder = DB::table('gdpr_data_request as gdpr')
+        return DB::table('gdpr_data_request as gdpr')
                                  ->addSelect('gdpr.id',
                                              'gdpr.customer_id',
                                              'gdpr.request_status',
@@ -41,16 +29,14 @@ class GDPRDataRequest extends DataGrid
                                              'gdpr.message',
                                              'gdpr.created_at',
                                              'gdpr.updated_at');
-               $this->setQueryBuilder($queryBuilder);
     }
 
-
-    public function addColumns()
+    public function prepareColumns()
     {
         $this->addColumn([
             'index' =>  'id',
             'label' => trans('gdpr::app.shop.customer-index-field.id'),
-            'type' => 'number',
+            'type' => 'integer',
             'searchable' => true,
             'sortable' => true,
             'filterable' => true
@@ -59,7 +45,7 @@ class GDPRDataRequest extends DataGrid
         $this->addColumn([
             'index' =>  'customer_id',
             'label' => trans('gdpr::app.shop.customer-index-field.customer_id'),
-            'type' => 'number',
+            'type' => 'integer',
             'searchable' => true,
             'sortable' => true,
             'filterable' => true
@@ -72,17 +58,17 @@ class GDPRDataRequest extends DataGrid
             'searchable' => true,
             'sortable' => false,
             'filterable' => false,
-         
+
         ]);
 
         $this->addColumn([
             'index' => 'request_type',
-            'label' => trans('gdpr::app.shop.customer-index-field.request_type'),
+            'label' => trans('gdpr::app.shop.customer-index-field.request-type'),
             'type' => 'string',
             'sortable' => false,
             'searchable' => true,
             'filterable' => false,
-           
+
         ]);
 
         $this->addColumn([
@@ -92,7 +78,7 @@ class GDPRDataRequest extends DataGrid
             'sortable' => false,
             'searchable' => true,
             'filterable' => false,
-           
+
         ]);
 
         $this->addColumn([
@@ -117,24 +103,27 @@ class GDPRDataRequest extends DataGrid
     public function prepareActions()
     {
         $routeName = request()->route()->getName();
-
         if ($routeName == 'admin.gdpr.dataRequest' && auth()->guard('admin')->user()) {
             $route_for_edit = 'admin.gdpr.edit';
             $route_for_delete = 'admin.gdpr.delete';
         }
 
         $this->addAction([
-            'method' => 'GET',
-            'route'  => 'admin.gdpr.edit',
-            'icon'   => 'icon pencil-lg-icon',
+            'icon'   => 'icon-edit',
             'title'  => trans('gdpr::app.admin.data-request.edit-data-request'),
+            'method' => 'GET',
+            'url' => function ($row) {
+                return route('admin.gdpr.edit', $row->id);
+            },
         ]);
 
         $this->addAction([
-            'method' => 'GET',
-            'route'  => 'admin.gdpr.delete',
-            'icon'   => 'icon trash-icon',
+            'icon'   => 'icon-delete',
             'title'  => trans('gdpr::app.admin.data-request.delete-data-request'),
+            'method' => 'GET',
+            'url' => function ($row) {
+                return route('admin.gdpr.delete', $row->id);
+            },
         ]);
     }
 }

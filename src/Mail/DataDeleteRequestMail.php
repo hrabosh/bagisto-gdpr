@@ -4,6 +4,9 @@ namespace Webkul\GDPR\Mail;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
@@ -13,19 +16,30 @@ class DataDeleteRequestMail extends Mailable
 
     public $dataDeleteRequest;
 
-    public function __construct($dataDeleteRequest) {
+    public function __construct($dataDeleteRequest)
+    {
         $this->dataDeleteRequest = $dataDeleteRequest;
     }
 
-    /**
-     * Build the message.
-     *
-     * @return $this
-     */
-    public function build()
+    public function envelope(): Envelope
     {
-        return $this->to($this->dataDeleteRequest['email'])
-            ->subject(trans('gdpr::app.mail.new-data-request.new-request-for-data-delete'))
-            ->view('gdpr::emails.customers.new-data-delete-request')->with($this->dataDeleteRequest);
+        return new Envelope(
+            to: [
+                new Address(
+                    $this->dataDeleteRequest['email'],
+                ),
+            ],
+            subject: trans('gdpr::app.mail.new-data-request.new-request-for-data-delete'),
+        );
+    }
+
+    public function content(): Content
+    {
+        return new Content(
+            view: 'gdpr::emails.customers.new-data-request',
+            with: [
+                'dataRequest' => $this->dataDeleteRequest,
+            ],
+        );
     }
 }

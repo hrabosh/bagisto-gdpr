@@ -21,7 +21,7 @@ Bagisto GDPR will help customers to Send Data Requests for Changing name , email
 
 ## 2. Requirements:
 
-* **Bagisto**: v1.3.3
+* **Bagisto**: v2.2.3
 
 ## 3. Installation:
 

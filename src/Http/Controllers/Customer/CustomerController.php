@@ -3,6 +3,8 @@
 namespace Webkul\GDPR\Http\Controllers\Customer;
 
 use Illuminate\Support\Facades\Mail;
+use Webkul\GDPR\DataGrids\Admin\GDPRDataRequest;
+use Webkul\GDPR\DataGrids\Shop\GDPRRequestList;
 use Webkul\GDPR\Repositories\GDPRDataRequestRepository;
 use Webkul\Customer\Repositories\CustomerAddressRepository;
 use Webkul\GDPR\Mail\DataUpdateRequestMail;
@@ -10,35 +12,30 @@ use Webkul\GDPR\Mail\DataDeleteRequestMail;
 use Webkul\Sales\Repositories\OrderRepository;
 use Webkul\GDPR\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
-use PDF;
-
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class CustomerController extends Controller
 {
-
-     /**
+    /**
      * Display a listing of the resource.
      *
      * @var \Illuminate\Http\Response
      */
     protected $_config;
 
-
-     /**
+    /**
      * GDPRDataRequestRepository object
      *
      * @var object
      */
     protected $gdprDataRequestRepository;
 
-
-     /**
+    /**
      * CustomerAddressRepository object
      *
      * @var object
      */
     protected $customerAddressRepository;
-
 
     /**
      * OrderRepository object
@@ -47,30 +44,31 @@ class CustomerController extends Controller
      */
     protected $orderRepository;
 
-
     public function __construct(
-             GDPRDataRequestRepository $gdprDataRequestRepository,
-             OrderRepository $orderRepository,
-             CustomerAddressRepository $customerAddressRepository)
-    { 
+        GDPRDataRequestRepository $gdprDataRequestRepository,
+        OrderRepository           $orderRepository,
+        CustomerAddressRepository $customerAddressRepository)
+    {
         $this->middleware('customer');
         $this->_config = request('_config');
         $this->gdprDataRequestRepository = $gdprDataRequestRepository;
         $this->orderRepository = $orderRepository;
-        $this->customerAddressRepository = $customerAddressRepository; 
+        $this->customerAddressRepository = $customerAddressRepository;
     }
 
-
-     /**
+    /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\View\View
      */
     public function index()
     {
+        if (request()->ajax()) {
+            return app(GDPRRequestList::class)->toJson();
+        }
+
         return view($this->_config['view']);
     }
-
 
     /**
      * Store a newly created resource in storage.
@@ -78,65 +76,58 @@ class CustomerController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function store()
-    {  
+    {
         $customer = auth()->guard('customer')->user();
         $request_type = request()->request_type;
-        
+
         if ($request_type == 'Update') {
-
             $params = request()->all() + [
-                'request_status'=>"Pending",
-                'customer_id'=>$customer->id,
-                'email'=>$customer->email,
-                'message'=>request()->update_message
-            ];
-
+                    'request_status' => "Pending",
+                    'customer_id' => $customer->id,
+                    'email' => $customer->email,
+                    'message' => request()->update_message
+                ];
             unset($params['update_message']);
-
         } else {
-
             $params = request()->all() + [
-                'request_status'=>"Pending",
-                'customer_id'=>$customer->id,
-                'email'=>$customer->email,
-                'message'=>request()->delete_message
-            ];
-
+                    'request_status' => "Pending",
+                    'customer_id' => $customer->id,
+                    'email' => $customer->email,
+                    'message' => request()->delete_message
+                ];
             unset($params['delete_message']);
         }
-     
+
         $data = $this->gdprDataRequestRepository->create($params);
 
         if ($data) {
-            if($params['request_type'] == 'Update') {
+            if ($params['request_type'] == 'Update') {
                 try {
-                        Mail::queue(new DataUpdateRequestMail($params));
-                        session()->flash('success', trans('gdpr::app.shop.customer-gdpr-data-request.success-verify'));
-                 } catch (\Exception $e) {
+//                    Mail::queue(new DataUpdateRequestMail($params));
+                    session()->flash('success', trans('gdpr::app.shop.customer-gdpr-data-request.success-verify'));
+                } catch (\Exception $e) {
                     session()->flash('info', trans('gdpr::app.shop.customer-gdpr-data-request.success-verify-email-unsent'));
                 }
                 return redirect()->route($this->_config['redirect']);
             } else {
                 try {
-                        Mail::queue(new DataDeleteRequestMail($params));
-                        session()->flash('success', trans('gdpr::app.shop.customer-gdpr-data-request.success-verify'));
+//                    Mail::queue(new DataDeleteRequestMail($params));
+                    session()->flash('success', trans('gdpr::app.shop.customer-gdpr-data-request.success-verify'));
                 } catch (\Exception $e) {
                     session()->flash('info', trans('gdpr::app.shop.customer-gdpr-data-request.success-verify-email-unsent'));
                 }
                 return redirect()->route($this->_config['redirect']);
             }
-            
         } else {
             session()->flash('error', trans('gdpr::app.shop.customer-gdpr-data-request.unable-to-sent'));
             return redirect()->route($this->_config['redirect']);
         }
     }
 
-
     /**
      * Download the view in pdf form for the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\View\View
      */
     public function pdfview()
@@ -144,55 +135,61 @@ class CustomerController extends Controller
         $customer = auth()->guard('customer')->user();
 
         try {
-                $orders =  DB::table('orders')
-                            ->leftJoin('addresses as order_address', 'orders.id', '=', 'order_address.order_id')
-                            ->where('order_address.customer_id',$customer->id)
-                            ->where('order_address.address_type','order_billing')
-                            ->get();
-                      
-                $address = $this->customerAddressRepository->where('address_type','customer')->where('customer_id',$customer->id)->get();
-                $params = ['customerInformation'=>$customer,
-                        'order'=>$orders,
-                        'address'=>$address];
+            $orders = DB::table('orders')
+                ->leftJoin('addresses as order_address', 'orders.id', '=', 'order_address.order_id')
+                ->where('order_address.customer_id', $customer->id)
+                ->where('order_address.address_type', 'order_billing')
+                ->get();
 
-                foreach ($params['order'] as $value) {
-                    $orderData[] = $value;   
-                }
+            $address = $this->customerAddressRepository->where('address_type', 'customer')->where('customer_id', $customer->id)->get();
+            $params = [
+                'customerInformation' => $customer,
+                'order' => $orders,
+                'address' => $address,
+            ];
 
-                foreach ($params['address'] as $value) {
-                    $addressData[] = $value;   
-                }
+            foreach ($params['order'] as $value) {
+                $orderData[] = $value;
+            }
 
-                if(!empty($orderData) && !empty($addressData)) {
-                    $param = ['order' => $orderData,
-                        'address' => $addressData,
-                        'customerInformation' => $customer];
+            foreach ($params['address'] as $value) {
+                $addressData[] = $value;
+            }
 
-                } else if(empty($orderData)) {
-                    $param = ['address' => $addressData,
-                        'customerInformation' => $customer];
-                } else {
-                    $param = ['order' => $orderData,
-                        'customerInformation' => $customer];
-                }
+            if (!empty($orderData) && !empty($addressData)) {
+                $param = [
+                    'order' => $orderData,
+                    'address' => $addressData,
+                    'customerInformation' => $customer,
+                ];
 
-        } catch(\Exception $e) {
-            $param = ['customerInformation'=>$customer];
+            } else if (empty($orderData)) {
+                $param = [
+                    'address' => $addressData,
+                    'customerInformation' => $customer,
+                ];
+            } else {
+                $param = [
+                    'order' => $orderData,
+                    'customerInformation' => $customer,
+                ];
+            }
+        } catch (\Exception $e) {
+            $param = ['customerInformation' => $customer];
         }
-        
+
         $pdf = PDF::loadView('gdpr::shop.customers.gdpr.pdfview', compact('param'));
 
         $paper_orientation = 'portrait';
-        $pdf->setPaper('a4',$paper_orientation);
+        $pdf->setPaper('a4', $paper_orientation);
 
-        return $pdf->download('customerInfo'.'.pdf');
+        return $pdf->download('customerInfo' . '.pdf');
     }
-
 
     /**
      * Show the view in HTML format for the specified resource.
      *
-     * @param  int  $id
+     * @param int $id
      * @return \Illuminate\View\View
      */
     public function htmlview()
@@ -200,43 +197,42 @@ class CustomerController extends Controller
         $customer = auth()->guard('customer')->user();
 
         try {
-                $orders =  DB::table('orders')
-                            ->leftJoin('addresses as order_address', 'orders.id', '=', 'order_address.order_id')
-                            ->where('order_address.customer_id',$customer->id)
-                            ->where('order_address.address_type','order_billing')
-                            ->get();
-                      
-                $address = $this->customerAddressRepository->where('address_type','customer')->where('customer_id',$customer->id)->get();
-                $params = ['customerInformation'=>$customer,
-                        'order'=>$orders,
-                        'address'=>$address];
+            $orders = DB::table('orders')
+                ->leftJoin('addresses as order_address', 'orders.id', '=', 'order_address.order_id')
+                ->where('order_address.customer_id', $customer->id)
+                ->where('order_address.address_type', 'order_billing')
+                ->get();
 
-                foreach ($params['order'] as $value) {
-                    $orderData[] = $value;   
-                }
+            $address = $this->customerAddressRepository->where('address_type', 'customer')->where('customer_id', $customer->id)->get();
+            $params = ['customerInformation' => $customer,
+                'order' => $orders,
+                'address' => $address];
 
-                foreach ($params['address'] as $value) {
-                    $addressData[] = $value;   
-                }
+            foreach ($params['order'] as $value) {
+                $orderData[] = $value;
+            }
 
-                if(!empty($orderData) && !empty($addressData)) {
-                    $param = ['order' => $orderData,
-                        'address' => $addressData,
-                        'customerInformation' => $customer];
+            foreach ($params['address'] as $value) {
+                $addressData[] = $value;
+            }
 
-                } else if(empty($orderData)) {
-                    $param = ['address' => $addressData,
-                        'customerInformation' => $customer];
-                } else {
-                    $param = ['order' => $orderData,
-                        'customerInformation' => $customer];
-                }
+            if (!empty($orderData) && !empty($addressData)) {
+                $param = ['order' => $orderData,
+                    'address' => $addressData,
+                    'customerInformation' => $customer];
 
-        } catch(\Exception $e) {
-            $param = ['customerInformation'=>$customer];
+            } else if (empty($orderData)) {
+                $param = ['address' => $addressData,
+                    'customerInformation' => $customer];
+            } else {
+                $param = ['order' => $orderData,
+                    'customerInformation' => $customer];
+            }
+
+        } catch (\Exception $e) {
+            $param = ['customerInformation' => $customer];
         }
 
-        return view($this->_config['view'],compact('param'));
+        return view($this->_config['view'], compact('param'));
     }
-    
 }

@@ -1,39 +1,50 @@
 <?php
-    Route::group(['middleware' => ['web']], function () {
-        Route::prefix('admin/gdpr')->group(function () {
-            Route::group(['middleware' => ['admin']], function () {
-                Route::namespace('Webkul\GDPR\Http\Controllers\Admin')->group(function () {  
 
-                    //admin routes for all requests
-                    
-                    Route::get('/', 'AdminController@index')->defaults('_config', [
-                        'view' => 'gdpr::admin.allgdpr.index',
-                        ])->name('admin.gdpr.index');
+use Illuminate\Support\Facades\Route;
+use Webkul\GDPR\Http\Controllers\Admin\AdminController;
+use Webkul\GDPR\Http\Controllers\Admin\SettingsController;
 
-                    Route::post('/store/{id}', 'AdminController@store')->defaults('_config', [
-                            'redirect' => 'admin.gdpr.index',
-                        ])->name('admin.gdpr.store');
+Route::group(['middleware' => ['web']], function () {
+    Route::group(['middleware' => ['admin'], 'prefix' => config('app.admin_url')], function () {
+        Route::controller(AdminController::class)->prefix('customers/gdpr')->group(function () {
+            Route::get('/requests', 'customerDataRequest')->defaults('_config', [
+                'view' => 'gdpr::admin.customers.request-list',
+            ])->name('admin.gdpr.dataRequest');
 
-                    Route::get('/requests', 'AdminController@customerDataRequest')->defaults('_config', [
-                            'view' => 'gdpr::admin.allgdpr.dataRequest',
-                        ])->name('admin.gdpr.dataRequest');
+            Route::get('/requests/edit/{id}', 'edit')->defaults('_config', [
+                'view' => 'gdpr::admin.customers.request-edit',
+            ])->name('admin.gdpr.edit');
 
-                    Route::get('requests/edit/{id}', 'AdminController@edit')->defaults('_config', [
-                            'view' => 'gdpr::admin.allgdpr.edit',
-                        ])->name('admin.gdpr.edit');
+            Route::post('/update', 'update')->defaults('_config', [
+                'redirect' => 'admin.gdpr.dataRequest',
+            ])->name('admin.gdpr.update');
 
-                    Route::post('/update', 'AdminController@update')->defaults('_config', [
-                            'redirect' => 'admin.gdpr.dataRequest',
-                        ])
-                        ->name('admin.gdpr.update');
-        
-                    Route::get('/delete/{id}', 'AdminController@delete')
-                        ->name('admin.gdpr.delete');
-
-                });
-            });
+            Route::get('/delete/{id}', 'delete')
+                ->name('admin.gdpr.delete');
         });
     });
+});
 
+Route::group(['middleware' => ['web']], function () {
+    Route::group(['middleware' => ['admin'], 'prefix' => config('app.admin_url')], function () {
+        Route::controller(SettingsController::class)->prefix('settings/gdpr')->group(function () {
+            Route::get('/', 'index')->defaults('_config', [
+                'view' => 'gdpr::admin.settings.index',
+            ])->name('admin.gdpr.settings.index');
 
+            Route::get('/create', 'create')->defaults('_config', [
+                'view' => 'gdpr::admin.settings.edit',
+            ])->name('admin.gdpr.settings.create');
 
+            Route::get('/edit/{id}', 'edit')->defaults('_config', [
+                'view' => 'gdpr::admin.settings.edit',
+            ])->name('admin.gdpr.settings.edit');
+
+            Route::post('/store/{id}', 'store')->defaults('_config', [
+                'redirect' => 'admin.gdpr.settings.index',
+            ])->name('admin.gdpr.settings.store');
+
+            Route::delete('/delete/{id}', 'destroy')->name('admin.gdpr.settings.delete');
+        });
+    });
+});

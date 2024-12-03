@@ -1,166 +1,153 @@
-@extends('shop::layouts.master')
+<x-shop::layouts.account>
+    <x-slot:title>
+        @lang('shop::app.customer.account.profile.index.title')
+    </x-slot:title>
 
-@section('page_title')
-    {{ __('shop::app.customer.account.profile.index.title') }}
-@endsection
+    <!-- Breadcrumbs -->
+    @if ((core()->getConfigData('general.general.breadcrumbs.shop')))
+        @section('breadcrumbs')
+            <x-shop::breadcrumbs name="shop.customer.profile.gdpr" />
+        @endSection
+    @endif
 
-@section('content-wrapper')
-
-    <div class="account-content">
-        @include('shop::customers.account.partials.sidemenu')
-
-        <div class="account-layout">
-            <div class="account-head">
-                <span class="back-icon">
-                    <a href="{{ route('customer.account.index') }}">
-                        <i class="icon icon-menu-back"></i>
-                    </a>
-                </span>
-                <span class="account-heading">
-                    {{ __('gdpr::app.shop.customer-gdpr-data-request.heading') }}
-                </span>
-                <div class="horizontal-rule"></div>
-            </div>
-
-            <div class="account-table-content">
-                <div class="tabs-content">
-                    <div class="sale-container">
-                        <form method="POST" onSubmit="return update_request_validate(event)" enctype="multipart/form-data" name="update_request_form" action="{{ route('gdpr.customer.store') }}">
-                            @csrf()
-                            <div class="sale-section">
-                                <div class="account-head mb-10">
-                                    <span class="sale-title">
-                                    {{ __('gdpr::app.shop.customer-gdpr-data-request.request-data-access') }}
-                                    </span>
-                                    <div class="horizontal-rule"></div>
-                                </div>
-                                <div class="control-group">
-                                    <a href="{{ route('gdpr.customers.pdfview',['download'=>'pdf']) }}">
-                                        <label class="btn btn-lg btn-primary" style="display: inline-block; width: auto;">
-                                            {{ __('gdpr::app.shop.customer-gdpr-data-request.get-pdf') }}
-                                        </label>
-                                    </a>
-                                </div>
-                                <div class="control-group">
-                                    <a href="{{ route('gdpr.customers.htmlview') }}" target="_blank">
-                                        <label class="btn btn-lg btn-primary" style="display: inline-block; width: auto;">
-                                            {{ __('gdpr::app.shop.customer-gdpr-data-request.get-html') }}
-                                        </label>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <div class="sale-section no-border">
-                                <div class="account-head mb-10">
-                                    <span class="sale-title">
-                                        {{ __('gdpr::app.shop.customer-gdpr-data-request.request-data-update') }}
-                                    </span>
-                                    <div class="horizontal-rule"></div>
-                                </div>
-                                <div class="sale-title">
-                                    <div class="section-title required">
-                                        {{ __('gdpr::app.shop.customer-gdpr-data-request.update-description') }}
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="control-group col-12">
-                                        <input type="hidden" id="request_type" name="request_type" value="{{ __('gdpr::app.shop.customer-gdpr-data-request.request-type-update') }}">
-                                        <textarea class="control" id="update_message" maxlength="500" name="update_message"></textarea> 
-                                    </div>
-                                </div>
-                                <div class="control-group">
-                                    <button type="submit" class="btn btn-lg btn-primary request-submit-btn">
-                                        {{ __('gdpr::app.shop.customer-gdpr-data-request.submit-request') }}
-                                    </button>
-                                </div>
-                            </div>
-                        </form> 
-                    
-                        <form method="POST" onSubmit="return delete_request_validate(event)" enctype="multipart/form-data" name="delete_request_form" action="{{ route('gdpr.customer.store') }}">
-                            @csrf()
-                            <div class="sale-section no-border">
-                                <div class="account-head mb-10">
-                                    <span class="sale-title">
-                                        {{ __('gdpr::app.shop.customer-gdpr-data-request.request-to-delete-account') }}
-                                    </span>
-                                    <div class="horizontal-rule"></div>
-                                </div>
-                                <div class="sale-title">
-                                    <div class="section-title required">
-                                        {{ __('gdpr::app.shop.customer-gdpr-data-request.delete-reason') }}
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="control-group col-12">
-                                        <input type="hidden" id="request_type" name="request_type" value="{{ __('gdpr::app.shop.customer-gdpr-data-request.request-type-delete') }}">
-                                        <textarea class="control" id="delete_message" maxlength="500" name="delete_message"></textarea> 
-                                    </div>
-                                </div>
-                                <div class="control-group">
-                                    <button type="submit" class="btn btn-lg btn-primary request-submit-btn">
-                                        {{ __('gdpr::app.shop.customer-gdpr-data-request.submit-request') }}
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    
-                        <div class="sale-section no-border">
-                            <div class="account-head mb-10">
-                                <span class="sale-title">
-                                    {{ __('gdpr::app.shop.customer-gdpr-data-request.request-list') }}
-                                </span>
-                                <div class="horizontal-rule"></div>
-                            </div>
-
-                            {!! view_render_event('customer.account.gdpr.list.before') !!}
-
-                            <div class="account-table-content">
-        
-                            {!! app('Webkul\GDPR\DataGrids\Shop\GDPRRequestList')->render() !!}
-
-                            </div>
-
-                            {!! view_render_event('customer.account.gdpr.list.after') !!}
-                            
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="max-md:hidden">
+        <x-shop::layouts.account.navigation />
     </div>
 
-@endsection
+    <div class="mx-4 flex-auto max-md:mx-6 max-sm:mx-4">
+        <div class="mb-8 flex items-center max-md:mb-5">
+            <!-- Back Button -->
+            <a
+                class="grid md:hidden"
+                href="{{ route('shop.customers.account.index') }}"
+            >
+                <span class="icon-arrow-left rtl:icon-arrow-right text-2xl"></span>
+            </a>
 
-@push('scripts')
+            <h2 class="text-2xl font-medium max-md:text-xl max-sm:text-base ltr:ml-2.5 md:ltr:ml-0 rtl:mr-2.5 md:rtl:mr-0">
+                @lang('gdpr::app.shop.customer-gdpr-data-request.heading')
+            </h2>
+        </div>
 
-<script>
+        <div class="mt-8 grid grid-cols-1 gap-y-6 max-md:mt-5 max-sm:gap-y-4">
+            <div class="grid w-full grid-cols-3 border-b border-zinc-200 py-3 max-md:px-0 items-center">
+                <p class="text-lg dark:text-white">
+                    @lang('gdpr::app.shop.customer-gdpr-data-request.request-data-access')
+                </p>
+                <p>
+                    <a href="{{ route('gdpr.customers.pdfview', ['download'=>'pdf']) }}"
+                       class="inline-flex secondary-button border-zinc-200 px-5 py-3 font-normal max-md:rounded-lg max-md:py-2 max-sm:py-1.5 max-sm:text-sm">
+                        @lang('gdpr::app.shop.customer-gdpr-data-request.get-pdf')
+                    </a>
+                    <a href="{{ route('gdpr.customers.htmlview') }}"
+                       target="_blank"
+                       class="inline-flex secondary-button border-zinc-200 px-5 py-3 font-normal max-md:rounded-lg max-md:py-2 max-sm:py-1.5 max-sm:text-sm">
+                        @lang('gdpr::app.shop.customer-gdpr-data-request.get-html')
+                    </a>
+                </p>
+            </div>
+        </div>
 
-    function update_request_validate(e)
-    {  
-        if (update_request_form.update_message.value == "") {
+        <x-shop::form
+            method="POST"
+            :action="route('gdpr.customer.store')"
+            enctype="multipart/form-data"
+            onSubmit="return update_request_validate(event)"
+            name="update_request_form"
+        >
+            <div class="mt-16 mb-8 grid grid-cols-1 gap-y-6 max-md:mt-5 max-sm:gap-y-4">
+                <h3 class="mb-10 font-medium text-lg">
+                    @lang('gdpr::app.shop.customer-gdpr-data-request.request-data-update')
+                </h3>
 
-            alert("Update Description should not be blank");
-            e.preventDefault();
-            update_request_form.update_message.focus();
+                <input type="hidden" id="request_type" name="request_type" value="@lang('gdpr::app.shop.customer-gdpr-data-request.request-type-update')">
 
-            return false;
-        }
-    }
+                <x-shop::form.control-group
+                    class="!mb-0"
+                >
+                    @php $message = 'update_message'; @endphp
 
-    function delete_request_validate(e)
-    {  
-        if (delete_request_form.delete_message.value == "") {
+                    <x-shop::form.control-group.label class="required" :for="$message">
+                        @lang('gdpr::app.shop.customer-gdpr-data-request.update-description')
+                    </x-shop::form.control-group.label>
 
-            alert("Delete Description should not be blank");
-            e.preventDefault();
-            delete_request_form.delete_message.focus();
+                    <x-admin::form.control-group.control
+                        type="textarea"
+                        :id="$message"
+                        :name="$message"
+                        rules="required"
+                        value="{{ old($message) }}"
+                        maxlength="500"
+                    />
 
-            return false;
-        }
-    }
+                    <x-shop::form.control-group.error :control-name="$message" />
+                </x-shop::form.control-group>
 
-</script>
+                <div class="flex items-center gap-x-2.5">
+                    <x-admin::button
+                        type="submit"
+                        class="secondary-button"
+                        button-type="submit"
+                        :title="trans('gdpr::app.shop.customer-gdpr-data-request.submit-request')"
+                    />
+                </div>
+            </div>
+        </x-shop::form>
 
-@endpush
+        <x-shop::form
+            method="POST"
+            :action="route('gdpr.customer.store')"
+            enctype="multipart/form-data"
+            onSubmit="return delete_request_validate(event)"
+            name="delete_request_form"
+        >
+            <div class="mt-16 mb-8 grid grid-cols-1 gap-y-6 max-md:mt-5 max-sm:gap-y-4">
+                <h3 class="mb-10 font-medium text-lg">
+                    @lang('gdpr::app.shop.customer-gdpr-data-request.request-to-delete-account')
+                </h3>
 
+                <input type="hidden" id="request_type" name="request_type" value="@lang('gdpr::app.shop.customer-gdpr-data-request.request-type-delete')">
 
+                <x-shop::form.control-group
+                    class="!mb-0"
+                >
+                    @php $message = 'delete_message'; @endphp
+
+                    <x-shop::form.control-group.label class="required" :for="$message">
+                        @lang('gdpr::app.shop.customer-gdpr-data-request.delete-reason')
+                    </x-shop::form.control-group.label>
+
+                    <x-admin::form.control-group.control
+                        type="textarea"
+                        :id="$message"
+                        :name="$message"
+                        rules="required"
+                        value="{{ old($message) }}"
+                        maxlength="500"
+                    />
+
+                    <x-shop::form.control-group.error :control-name="$message" />
+                </x-shop::form.control-group>
+
+                <div class="flex items-center gap-x-2.5">
+                    <x-admin::button
+                        type="submit"
+                        class="secondary-button"
+                        button-type="submit"
+                        :title="trans('gdpr::app.shop.customer-gdpr-data-request.submit-request')"
+                    />
+                </div>
+            </div>
+        </x-shop::form>
+
+        <div class="mt-16 grid grid-cols-1 max-md:mt-5">
+            <h3 class="mb-10 font-medium text-lg">
+                @lang('gdpr::app.shop.customer-gdpr-data-request.request-list')
+            </h3>
+
+            {!! view_render_event('customer.account.gdpr.list.before') !!}
+            <x-shop::datagrid :src="route('gdpr.customers.allgdpr')"></x-shop::datagrid>
+            {!! view_render_event('customer.account.gdpr.list.after') !!}
+        </div>
+    </div>
+</x-shop::layouts>
